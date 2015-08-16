@@ -59,7 +59,7 @@ ggplot(daily_total, aes(x=format(date, "%d"),y=total.steps, fill=weekdays(date))
 As per assignment, putting together a histogram of the number of steps each day:
 
 ```r
-ggplot(daily_total, aes(x=total.steps)) + geom_histogram(binwidth = 2500, colour="black", fill="light blue") + ggtitle("Histogram of Daily Total Steps") + ylab("Count") + xlab("Total Steps (binwidth set to 2500)") + geom_vline(aes(xintercept=mean(total.steps, na.rm=TRUE)), color="red", linetype="dashed", size=1)
+ggplot(daily_total, aes(x=total.steps)) + geom_histogram(binwidth = 2500, colour="black", fill="light blue") + ggtitle("Histogram of Daily Total Steps - Original Data") + ylab("Count") + xlab("Total Steps (binwidth set to 2500)") + geom_vline(aes(xintercept=mean(total.steps, na.rm=TRUE)), color="red", linetype="dashed", size=1)
 ```
 
 ![](PA1_template_files/figure-html/histo-1.png) 
@@ -95,7 +95,7 @@ colnames(interval_means) <- c("interval","avg.steps")
 Plot the average time series data for a day:
 
 ```r
-ggplot(interval_means, aes(x=interval,y=avg.steps)) + geom_line(color="dark green")
+ggplot(interval_means, aes(x=interval,y=avg.steps)) + geom_line(color="dark green") + ylab("Average Number of Steps") + xlab("Intervals in Increments of 5 Minutes") + ggtitle("Daily Activity")
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-2-1.png) 
@@ -124,16 +124,18 @@ sum(is.na(data$steps))
 ## [1] 2304
 ```
 
-We will now supplement the missing values with the average number of steps for that interval (found in the average daily activity pattern) by iterating through all rows of the data set:
+We will now supplement the missing values with the average number of steps for that interval (found in the average daily activity pattern) by iterating through all rows of the data set. Same rows are shown in the 10 row data sample:
 
 ```r
+#iterating through data to replace NAs
 supplemented <- data
 for(i in 1:nrow(supplemented)) {
     if(is.na(supplemented$steps[i])) {
         supplemented$steps[i] <-         interval_means[which(interval_means$interval==supplemented$interval[i]),]$avg.steps
         }
-    }
+}
 
+#display table of new sample data
 kable(supplemented[2303:2312,], align='c', row.names = TRUE)
 ```
 
@@ -150,4 +152,66 @@ kable(supplemented[2303:2312,], align='c', row.names = TRUE)
 2311    28.0000000    2012-10-09       30    
 2312    0.0000000     2012-10-09       35    
 
+```r
+#create daily aggregates
+daily_total_supplemented <- aggregate(x=supplemented$steps, by=list(supplemented$date), sum, na.rm=TRUE)
+colnames(daily_total_supplemented) <- c("date","total.steps")
+```
+
+Rerunning the code to create the histogram but now with the supplemented data set:
+
+```r
+ggplot(daily_total_supplemented, aes(x=total.steps)) + geom_histogram(binwidth = 2500, colour="black", fill="light blue") + ggtitle("Histogram of Daily Total Steps - Supplemented Data") + ylab("Count") + xlab("Total Steps (binwidth set to 2500)") + geom_vline(aes(xintercept=mean(total.steps, na.rm=TRUE)), color="red", linetype="dashed", size=1)
+```
+
+![](PA1_template_files/figure-html/histo2-1.png) 
+
+The overall daily average for the supplemented data is:
+
+```r
+mean(daily_total_supplemented$total.steps, na.rm=TRUE)
+```
+
+```
+## [1] 10766.19
+```
+
+The overall daily median is:
+
+```r
+median(daily_total_supplemented$total.steps, na.rm=TRUE)
+```
+
+```
+## [1] 10766.19
+```
+
 ## Are there differences in activity patterns between weekdays and weekends?
+Create a function to calculate whether a day is a weekday or a weekend day:
+
+```r
+daytype = function(x) {
+    if(weekdays(x) %in% c("Saturday","Sunday")){
+        return("Weekend")
+    } else {
+            return("Weekday")
+    }
+}
+
+supplemented$day.type <- daytype(supplemented$date)
+```
+
+Aggregate the data by taking the average for each interval & day type:
+
+```r
+interval_means_supplemented <- aggregate(x=supplemented$steps, by=list(supplemented$interval,supplemented$day.type), mean, na.rm=TRUE)
+colnames(interval_means_supplemented) <- c("interval","day.type","avg.steps")
+```
+
+Comparing daily activity for weekdays vs weekend days:
+
+```r
+ggplot(interval_means_supplemented, aes(x=interval,y=avg.steps)) + geom_line() + ylab("Average Number of Steps") + xlab("Intervals in Increments of 5 Minutes") + ggtitle("Daily Activity Weekday vs Weekend") + facet_grid(day.type ~ .)
+```
+
+![](PA1_template_files/figure-html/comparison-1.png) 
