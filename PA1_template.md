@@ -186,19 +186,24 @@ median(daily_total_supplemented$total.steps, na.rm=TRUE)
 ## [1] 10766.19
 ```
 
+In the histogram it is probably the easiest to see how there is no longer a very large category with a low number of steps and this has caused the mean and median values to be closer to each other. 
+
 ## Are there differences in activity patterns between weekdays and weekends?
-Create a function to calculate whether a day is a weekday or a weekend day:
+Create a function to calculate whether a day is a weekday or a weekend day and iterate over data set:
 
 ```r
-daytype = function(x) {
-    if(weekdays(x) %in% c("Saturday","Sunday")){
+daytype <- function(x) {
+    day <- weekdays(x)
+    if(day=="Saturday" || day=="Sunday") {
         return("Weekend")
     } else {
-            return("Weekday")
+        return("Weekday")
     }
 }
 
-supplemented$day.type <- daytype(supplemented$date)
+for(i in 1:nrow(supplemented)) {
+    supplemented$day.type[i] <- daytype(supplemented$date[i])
+}
 ```
 
 Aggregate the data by taking the average for each interval & day type:
@@ -211,7 +216,7 @@ colnames(interval_means_supplemented) <- c("interval","day.type","avg.steps")
 Comparing daily activity for weekdays vs weekend days:
 
 ```r
-ggplot(interval_means_supplemented, aes(x=interval,y=avg.steps)) + geom_line() + ylab("Average Number of Steps") + xlab("Intervals in Increments of 5 Minutes") + ggtitle("Daily Activity Weekday vs Weekend") + facet_grid(day.type ~ .)
+ggplot(interval_means_supplemented, aes(x=interval,y=avg.steps, color=avg.steps/max(avg.steps))) + geom_line(size=0.9) + ylab("Average Number of Steps") + xlab("Intervals in Increments of 5 Minutes") + ggtitle("Daily Activity Weekday vs Weekend") + facet_grid(day.type ~ .)
 ```
 
 ![](PA1_template_files/figure-html/comparison-1.png) 
